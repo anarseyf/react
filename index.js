@@ -1,6 +1,10 @@
 // see http://dontkry.com/posts/code/using-npm-on-the-client-side.html
 
+var MAPBOX_TOKEN = "pk.eyJ1IjoiYW5hcnNleWYiLCJhIjoiY2luejZlYTV5MThyb3VnbHlwNDJrZmwxcCJ9.NmZCqGSgzu07RUv8y3fIdg";
+
 var fortyTwo = require('./forty-two.js');
+var RouteOverlayExample = require('./routes.js');
+var r = require('r-dom');
 var result = fortyTwo(window.location);
 console.log("Result: ", result);
 
@@ -12,48 +16,70 @@ console.log("react");
 var ReactDOM = require("./node_modules/react-dom/");
 console.log("ReactDOM");
 
-var CommentBox = React.createClass({
-    render: function() {
-        return (
-            <div className="commentBox">
-                Hello, world! I am a CommentBox.
-            </div>
-        );
-    }
-});
-ReactDOM.render(
-    <CommentBox />,
-    document.getElementById('example')
-);
-
 var MyGraph = React.createClass({
     render: function() {
         return (
             <XYPlot width={300} height={300}>
-            <HorizontalGridLines />
-            <LineSeries
-                data={[
+                <HorizontalGridLines />
+                <LineSeries
+                    data={[
                 {x: 1, y: 10},
                 {x: 2, y: 5},
                 {x: 3, y: 15}
                 ]}/>
-            <XAxis />
-            <YAxis />
-        </XYPlot>
+                <XAxis />
+                <YAxis />
+            </XYPlot>
         );
     }
 });
 
-ReactDOM.render(
-    <MyGraph />,
-    document.getElementById('vis')
-);
-
 var MapGL = require('react-map-gl');
 
-//<MapGL width={400} height={400} latitude={37.7577} longitude={-122.4376}
-//  zoom={8} onChangeViewport={(viewport) => {
-//    var {latitude, longitude, zoom} = viewport;
-//    // Optionally call `setState` and use the state to update the map.
-//  }}
-///>
+var MyMap = React.createClass({
+    render: function () {
+
+        return (
+            <MapGL mapboxApiAccessToken={ MAPBOX_TOKEN }
+                width={400}
+                height={400}
+                latitude={37.7577}
+                longitude={-122.4376}
+                zoom={10}
+                onChangeViewport={(viewport) => {
+                    var {latitude, longitude, zoom} = viewport;
+                    // Optionally call `setState` and use the state to update the map.
+                }}
+            />
+        );
+    }
+});
+
+// ReactDOM.render(
+//     <MyGraph />,
+//     document.getElementById('graph')
+// );
+
+ReactDOM.render(
+    <MyMap />,
+    document.getElementById('map')
+);
+
+var App = React.createClass({
+
+    displayName: 'App',
+
+    render: function render() {
+        var common = {
+            width: 400,
+            height: 400,
+            style: {float: 'left'},
+            mapboxApiAccessToken: MAPBOX_TOKEN
+        };
+        return r.div([r(RouteOverlayExample, common)]);
+    }
+});
+
+var container = document.createElement('div');
+document.body.appendChild(container);
+ReactDOM.render(r(App), container);
