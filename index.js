@@ -60,10 +60,10 @@ var MyMap = React.createClass({
 //     document.getElementById('graph')
 // );
 
-ReactDOM.render(
-    <MyMap />,
-    document.getElementById('map')
-);
+// ReactDOM.render(
+//     <MyMap />,
+//     document.getElementById('map')
+// );
 
 var App = React.createClass({
 

@@ -7,6 +7,7 @@ var React = require('react');
 var d3 = require('d3');
 var r = require('r-dom');
 var alphaify = require('alphaify');
+var x2js = require('x2js');
 
 var MapGL = require('react-map-gl');
 var SVGOverlay = require('./node_modules/react-map-gl/src/overlays/svg.react');
@@ -29,7 +30,7 @@ var RouteOverlayExample = React.createClass({
             viewport: {
                 latitude: 37.7736092599127,
                 longitude: -122.42312591099463,
-                zoom: 12.011557070552028,
+                zoom: 11,
                 startDragLngLat: null,
                 isDragging: false
             }
@@ -48,7 +49,7 @@ var RouteOverlayExample = React.createClass({
             r.g({
                 style: {pointerEvents: 'visibleStroke'},
                 onClick: function onClick() {
-                    window.alert('route ' + index);
+                    console.debug('route ' + index);
                 }
             }, [
                 r.path({
@@ -89,7 +90,17 @@ var RouteOverlayExample = React.createClass({
         });
     },
 
+    _test: function () {
+        $.get('./data/run.gpx', function (runXml) {
+            var runJson = x2js.xml_str2json(runXml);
+            console.debug("Run: " + runJson);
+        });
+    },
+
     render: function render() {
+
+        this._test();
+
         var viewport = assign({}, this.state.viewport, this.props);
         return r(MapGL, assign({}, viewport, {
             onChangeViewport: this._onChangeViewport
