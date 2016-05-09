@@ -14,6 +14,7 @@ var CanvasOverlay = require('./node_modules/react-map-gl/src/overlays/canvas.rea
 
 var ROUTES = require('./data/routes-example.json');
 var RUNS = [];
+var SPARKS = [];
 
 var color = d3.scale.category10();
 
@@ -102,10 +103,23 @@ var RouteOverlayExample = React.createClass({
     _getRun: function (fileName) {
         d3.xml(fileName, function (error, data) {
 
-            var coordinates = [].map.call(data.querySelectorAll("trkpt"), function(node) {
-                return [ +node.getAttribute("lon"), +node.getAttribute("lat") ];
+            var nodes = data.querySelectorAll("trkpt");
+            var filteredNodes = [].filter.call(nodes,
+                function (point, i) { return i % 500 === 0; }); // TODO - remove
+
+            var points = [].map.call(filteredNodes, function(node) {
+                var point = {
+                    coordinates: [ +node.getAttribute("lon"), +node.getAttribute("lat") ]
+                };
+                [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
+                    console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
+                });
+                return point;
             });
 
+            var coordinates = points.map(function (point) {
+                return point.coordinates;
+            });
             var run = { coordinates: coordinates };
             RUNS.push(run);
 
