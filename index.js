@@ -43,9 +43,9 @@ var MyMap = React.createClass({
             <MapGL mapboxApiAccessToken={ MAPBOX_TOKEN }
                 width={400}
                 height={400}
-                latitude={37.7577}
-                longitude={-122.4376}
-                zoom={10}
+                latitude={37.78}
+                longitude={-122.5}
+                zoom={11}
                 onChangeViewport={(viewport) => {
                     var {latitude, longitude, zoom} = viewport;
                     // Optionally call `setState` and use the state to update the map.
@@ -70,16 +70,16 @@ var App = React.createClass({
     displayName: 'App',
 
     render: function render() {
-        var common = {
-            width: 400,
-            height: 400,
-            style: {float: 'left'},
+        var params = {
+            width: 900,
+            height: 600,
+            style: { float: 'left' },
             mapboxApiAccessToken: MAPBOX_TOKEN
         };
-        return r.div([r(RouteOverlayExample, common)]);
+        return r.div([r(RouteOverlayExample, params)]);
     }
 });
 
-var container = document.createElement('div');
+var container = document.createElement("div");
 document.body.appendChild(container);
 ReactDOM.render(r(App), container);

@@ -7,13 +7,13 @@ var React = require('react');
 var d3 = require('d3');
 var r = require('r-dom');
 var alphaify = require('alphaify');
-var x2js = require('x2js');
 
 var MapGL = require('react-map-gl');
 var SVGOverlay = require('./node_modules/react-map-gl/src/overlays/svg.react');
 var CanvasOverlay = require('./node_modules/react-map-gl/src/overlays/canvas.react');
 
 var ROUTES = require('./data/routes-example.json');
+var RUNS = [];
 
 var color = d3.scale.category10();
 
@@ -26,11 +26,14 @@ var RouteOverlayExample = React.createClass({
     },
 
     getInitialState: function getInitialState() {
+
+        ["./data/run1.gpx", "./data/run2.gpx"].forEach(this._getRun);
+
         return {
             viewport: {
-                latitude: 37.7736092599127,
-                longitude: -122.42312591099463,
-                zoom: 11,
+                latitude: 37.78,
+                longitude: -122.45,
+                zoom: 12,
                 startDragLngLat: null,
                 isDragging: false
             }
@@ -65,7 +68,10 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
-        var routes = ROUTES.map(function _map(route, index) {
+        if (!RUNS) {
+            return;
+        }
+        var routes = RUNS.map(function _map(route, index) {
             var points = route.coordinates.map(opt.project).map(function __map(p) {
                 return [d3.round(p[0], 1), d3.round(p[1], 1)];
             });
@@ -75,11 +81,14 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawCanvasOverlay: function _redrawCanvasOverlay(opt) {
+        if (!RUNS) {
+            return;
+        }
         var ctx = opt.ctx;
         var width = opt.width;
         var height = opt.height;
         ctx.clearRect(0, 0, width, height);
-        ROUTES.map(function _map(route, index) {
+        RUNS.map(function _map(route, index) {
             route.coordinates.map(opt.project).forEach(function _forEach(p, i) {
                 var point = [d3.round(p[0], 1), d3.round(p[1], 1)];
                 ctx.fillStyle = d3.rgb(color(index)).brighter(1).toString();
@@ -90,16 +99,21 @@ var RouteOverlayExample = React.createClass({
         });
     },
 
-    _test: function () {
-        $.get('./data/run.gpx', function (runXml) {
-            var runJson = x2js.xml_str2json(runXml);
-            console.debug("Run: " + runJson);
-        });
+    _getRun: function (fileName) {
+        d3.xml(fileName, function (error, data) {
+
+            var coordinates = [].map.call(data.querySelectorAll("trkpt"), function(node) {
+                return [ +node.getAttribute("lon"), +node.getAttribute("lat") ];
+            });
+
+            var run = { coordinates: coordinates };
+            RUNS.push(run);
+
+            this.forceUpdate();
+        }.bind(this));
     },
 
     render: function render() {
-
-        this._test();
 
         var viewport = assign({}, this.state.viewport, this.props);
         return r(MapGL, assign({}, viewport, {

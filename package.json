@@ -4,13 +4,14 @@
   "description": "...",
   "dependencies": {
     "body-parser": "^1.4.3",
+    "d3": "^3.5.17",
     "express": "^4.4.5",
     "immutable": "^3.8.1",
     "r-dom": "^2.2.0",
     "react-addons-shallow-compare": "^15.0.2",
+    "react-dom": "^15.0.2",
     "react-map-gl": "^0.6.9",
-    "react-vis": "^0.3.4",
-    "x2js": "^2.0.1"
+    "react-vis": "^0.3.4"
   },
   "devDependencies": {
     "alphaify": "^3.0.0",
