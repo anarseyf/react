@@ -23,16 +23,21 @@ var getRun = function (fileName) {
 
         var nodes = data.querySelectorAll("trkpt");
         var filteredNodes = [].filter.call(nodes,
-            function (point, i) { return i % 500 === 0; }); // TODO - remove
+            function (point, i) { return i % 100 === 0; }); // TODO - remove
 
         var run = [].map.call(filteredNodes, function(node) {
             var measurements = {};
             [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
                 // console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
+                var key;
                 if (n.prefix === "gpxdata") {
-                    var key = n.nodeName.slice("gpxdata:".length);
+                    key = n.nodeName.slice("gpxdata:".length);
                     measurements[key] = +n.textContent;
                 }
+                // else if (n.prefix === "gpxtpx") { // TODO
+                //     key = n.nodeName.slice("gpxtpx:".length);
+                //     measurements[key] = +n.textContent;
+                // }
             });
             return {
                 coordinates: [ +node.getAttribute("lon"), +node.getAttribute("lat") ],
@@ -44,7 +49,7 @@ var getRun = function (fileName) {
         runs.push(run);
 
         renderIfReady();
-        
+
     }.bind(this));
 };
 
@@ -54,8 +59,8 @@ var App = React.createClass({
 
     render: function render() {
         var params = {
-            width: 900,
-            height: 600,
+            width: 800,
+            height: 400,
             style: { float: 'left' },
             mapboxApiAccessToken: MAPBOX_TOKEN,
             runs: runs
@@ -65,23 +70,54 @@ var App = React.createClass({
 });
 
 var MyGraph = React.createClass({
-    render: function() {
+
+    getInitialState: function () {
 
         var run = runs[0];
-        var speed = run.map(function (datum) {
-            return datum.speed;
+
+        var types = Object.keys(run[0].measurements);
+        var dataByType = {};
+        types.forEach(function (type) {
+            dataByType[type] = run.map(function (datum, i) {
+                return { x: i, y: datum.measurements[type] }
+            });
         });
-        var data = speed.map(function (datum, i) {
-            return {x : i, y : datum}
-        });
+        var selectedType = types[0];
+
+        return {
+            types: types,
+            selectedType: selectedType,
+            dataByType: dataByType,
+            data: dataByType[selectedType]
+        }
+    },
+
+    handleClick: function (type) {
+        console.debug("type = " + type);
+        this.setState({ selectedType: type, data: this.state.dataByType[type] });
+    },
+
+    render: function() {
+
+        var animation = { duration: 500 };
+        var types = this.state.types;
+        var data = this.state.data;
+
+        var buttons = types.map(function (type, i) {
+            return (<div className="c-type-button"
+                onClick={ this.handleClick.bind(this, type) } key={ i }>{ type }</div>);
+        }, this);
 
         return (
-            <XYPlot width={300} height={100}>
-                <HorizontalGridLines />
-                <LineSeries data={data}/>
-                <XAxis />
-                <YAxis />
-            </XYPlot>
+            <div>
+                <XYPlot width={300} height={100} animation={animation}>
+                    <HorizontalGridLines />
+                    <LineSeries data={ data } />
+                    <XAxis />
+                    <YAxis />
+                </XYPlot>
+                <div>{ buttons }</div>
+            </div>
         );
     }
 });

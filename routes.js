@@ -12,9 +12,6 @@ var MapGL = require('react-map-gl');
 var SVGOverlay = require('./node_modules/react-map-gl/src/overlays/svg.react');
 var CanvasOverlay = require('./node_modules/react-map-gl/src/overlays/canvas.react');
 
-var ROUTES = require('./data/routes-example.json');
-var SPARKS = [];
-
 var color = d3.scale.category10();
 
 var RouteOverlayExample = React.createClass({
@@ -29,9 +26,9 @@ var RouteOverlayExample = React.createClass({
 
         return {
             viewport: {
-                latitude: 37.78,
+                latitude: 37.79,
                 longitude: -122.45,
-                zoom: 12,
+                zoom: 11.6,
                 startDragLngLat: null,
                 isDragging: false
             },
@@ -66,6 +63,12 @@ var RouteOverlayExample = React.createClass({
         ]);
     },
 
+    _getRouteCoordinates: function (route) {
+        return route.map(function (datum) {
+            return datum.coordinates;
+        });
+    },
+
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
         var runs = this.state.runs;
         if (!runs) {
@@ -73,7 +76,8 @@ var RouteOverlayExample = React.createClass({
             return;
         }
         var routes = runs.map(function _map(route, index) {
-            var points = route.coordinates.map(opt.project).map(function __map(p) {
+            var coordinates = this._getRouteCoordinates(route);
+            var points = coordinates.map(opt.project).map(function __map(p) {
                 return [d3.round(p[0], 1), d3.round(p[1], 1)];
             });
             return r.g({key: index}, this._renderRoute(points, index));
@@ -92,14 +96,15 @@ var RouteOverlayExample = React.createClass({
         var height = opt.height;
         ctx.clearRect(0, 0, width, height);
         runs.map(function _map(route, index) {
-            route.coordinates.map(opt.project).forEach(function _forEach(p, i) {
+            var coordinates = this._getRouteCoordinates(route);
+            coordinates.map(opt.project).forEach(function _forEach(p, i) {
                 var point = [d3.round(p[0], 1), d3.round(p[1], 1)];
                 ctx.fillStyle = d3.rgb(color(index)).brighter(1).toString();
                 ctx.beginPath();
                 ctx.arc(point[0], point[1], 2, 0, Math.PI * 2);
                 ctx.fill();
             });
-        });
+        }, this);
     },
 
     render: function render() {
