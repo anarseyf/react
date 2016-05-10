@@ -33,16 +33,14 @@ var getRun = function getRun(fileName) {
         var run = [].map.call(filteredNodes, function (node) {
             var measurements = {};
             [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
-                // console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
                 var key;
                 if (n.prefix === "gpxdata") {
                     key = n.nodeName.slice("gpxdata:".length);
                     measurements[key] = +n.textContent;
+                } else if (n.nodeName === "gpxtpx:hr") {
+                    key = n.nodeName.slice("gpxtpx:".length);
+                    measurements[key] = +n.textContent;
                 }
-                // else if (n.prefix === "gpxtpx") { // TODO
-                //     key = n.nodeName.slice("gpxtpx:".length);
-                //     measurements[key] = +n.textContent;
-                // }
             });
             return {
                 coordinates: [+node.getAttribute("lon"), +node.getAttribute("lat")],
@@ -105,14 +103,15 @@ var MyGraph = React.createClass({
 
     render: function render() {
 
-        var animation = { duration: 1000 };
+        var animation = { duration: 500 };
         var types = this.state.types;
         var data = this.state.data;
 
         var buttons = types.map(function (type, i) {
+            var className = "c-type-button " + (type === this.state.selectedType ? " c-selected" : "");
             return React.createElement(
                 'div',
-                { className: 'c-type-button',
+                { className: className,
                     onClick: this.handleClick.bind(this, type), key: i },
                 type
             );
@@ -125,9 +124,9 @@ var MyGraph = React.createClass({
                 _reactVis.XYPlot,
                 { width: 300, height: 100, animation: animation },
                 React.createElement(_reactVis.HorizontalGridLines, null),
-                React.createElement(_reactVis.LineSeries, { data: data }),
                 React.createElement(_reactVis.XAxis, null),
-                React.createElement(_reactVis.YAxis, null)
+                React.createElement(_reactVis.YAxis, null),
+                React.createElement(_reactVis.LineSeries, { data: data })
             ),
             React.createElement(
                 'div',

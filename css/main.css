@@ -8,6 +8,7 @@
 .c-spark {
     float: right;
     border: 1px solid lightslategray;
+    max-width: 400px;
 }
 
 .c-type-button {
@@ -16,4 +17,10 @@
     padding: 5px 10px;
     cursor: pointer;
     border: 1px solid lightslategray;
+}
+
+.c-type-button.c-selected {
+    background: lightslategray;
+    color: white;
+    cursor: default;
 }

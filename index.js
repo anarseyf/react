@@ -28,16 +28,15 @@ var getRun = function (fileName) {
         var run = [].map.call(filteredNodes, function(node) {
             var measurements = {};
             [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
-                // console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
                 var key;
                 if (n.prefix === "gpxdata") {
                     key = n.nodeName.slice("gpxdata:".length);
                     measurements[key] = +n.textContent;
                 }
-                // else if (n.prefix === "gpxtpx") { // TODO
-                //     key = n.nodeName.slice("gpxtpx:".length);
-                //     measurements[key] = +n.textContent;
-                // }
+                else if (n.nodeName === "gpxtpx:hr") {
+                    key = n.nodeName.slice("gpxtpx:".length);
+                    measurements[key] = +n.textContent;
+                }
             });
             return {
                 coordinates: [ +node.getAttribute("lon"), +node.getAttribute("lat") ],
@@ -104,7 +103,8 @@ var MyGraph = React.createClass({
         var data = this.state.data;
 
         var buttons = types.map(function (type, i) {
-            return (<div className="c-type-button"
+            var className = "c-type-button " + (type === this.state.selectedType ? " c-selected" : "");
+            return (<div className={ className }
                 onClick={ this.handleClick.bind(this, type) } key={ i }>{ type }</div>);
         }, this);
 
@@ -112,9 +112,9 @@ var MyGraph = React.createClass({
             <div>
                 <XYPlot width={300} height={100} animation={animation}>
                     <HorizontalGridLines />
-                    <LineSeries data={ data } />
                     <XAxis />
                     <YAxis />
+                    <LineSeries data={ data } />
                 </XYPlot>
                 <div>{ buttons }</div>
             </div>
