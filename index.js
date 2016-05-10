@@ -2,11 +2,10 @@
 
 var MAPBOX_TOKEN = "pk.eyJ1IjoiYW5hcnNleWYiLCJhIjoiY2luejZlYTV5MThyb3VnbHlwNDJrZmwxcCJ9.NmZCqGSgzu07RUv8y3fIdg";
 
-var fortyTwo = require('./forty-two.js');
 var RouteOverlayExample = require('./routes.js');
 var r = require('r-dom');
-var result = fortyTwo(window.location);
-console.log("Result: ", result);
+var d3 = require('d3');
+var runs = [];
 
 import {XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries} from 'react-vis';
 console.log("OK");
@@ -16,54 +15,38 @@ console.log("react");
 var ReactDOM = require("./node_modules/react-dom/");
 console.log("ReactDOM");
 
-var MyGraph = React.createClass({
-    render: function() {
-        return (
-            <XYPlot width={300} height={300}>
-                <HorizontalGridLines />
-                <LineSeries
-                    data={[
-                {x: 1, y: 10},
-                {x: 2, y: 5},
-                {x: 3, y: 15}
-                ]}/>
-                <XAxis />
-                <YAxis />
-            </XYPlot>
-        );
-    }
-});
-
 var MapGL = require('react-map-gl');
+var fileNames = ["./data/run1.gpx", "./data/run2.gpx"];
 
-var MyMap = React.createClass({
-    render: function () {
+var getRun = function (fileName) {
+    d3.xml(fileName, function (error, data) {
 
-        return (
-            <MapGL mapboxApiAccessToken={ MAPBOX_TOKEN }
-                width={400}
-                height={400}
-                latitude={37.78}
-                longitude={-122.5}
-                zoom={11}
-                onChangeViewport={(viewport) => {
-                    var {latitude, longitude, zoom} = viewport;
-                    // Optionally call `setState` and use the state to update the map.
-                }}
-            />
-        );
-    }
-});
+        var nodes = data.querySelectorAll("trkpt");
+        var filteredNodes = [].filter.call(nodes,
+            function (point, i) { return i % 500 === 0; }); // TODO - remove
 
-// ReactDOM.render(
-//     <MyGraph />,
-//     document.getElementById('graph')
-// );
+        var run = [].map.call(filteredNodes, function(node) {
+            var measurements = {};
+            [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
+                // console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
+                if (n.prefix === "gpxdata") {
+                    var key = n.nodeName.slice("gpxdata:".length);
+                    measurements[key] = +n.textContent;
+                }
+            });
+            return {
+                coordinates: [ +node.getAttribute("lon"), +node.getAttribute("lat") ],
+                measurements: measurements
+            };
+        });
 
-// ReactDOM.render(
-//     <MyMap />,
-//     document.getElementById('map')
-// );
+        console.debug("run: " + JSON.stringify(run, null, 4));
+        runs.push(run);
+
+        renderIfReady();
+        
+    }.bind(this));
+};
 
 var App = React.createClass({
 
@@ -74,12 +57,46 @@ var App = React.createClass({
             width: 900,
             height: 600,
             style: { float: 'left' },
-            mapboxApiAccessToken: MAPBOX_TOKEN
+            mapboxApiAccessToken: MAPBOX_TOKEN,
+            runs: runs
         };
         return r.div([r(RouteOverlayExample, params)]);
     }
 });
 
-var container = document.createElement("div");
-document.body.appendChild(container);
-ReactDOM.render(r(App), container);
+var MyGraph = React.createClass({
+    render: function() {
+
+        var run = runs[0];
+        var speed = run.map(function (datum) {
+            return datum.speed;
+        });
+        var data = speed.map(function (datum, i) {
+            return {x : i, y : datum}
+        });
+
+        return (
+            <XYPlot width={300} height={100}>
+                <HorizontalGridLines />
+                <LineSeries data={data}/>
+                <XAxis />
+                <YAxis />
+            </XYPlot>
+        );
+    }
+});
+
+var renderIfReady = function () {
+    if (runs.length === fileNames.length) {
+        var container = document.createElement("div");
+        document.body.appendChild(container);
+        ReactDOM.render(r(App), container);
+
+        ReactDOM.render(
+            <MyGraph />,
+            document.getElementById('graph')
+        );
+    }
+};
+
+fileNames.forEach(getRun);

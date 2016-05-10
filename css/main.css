@@ -4,3 +4,8 @@
 
     /*text-align: center;*/
 }
+
+.c-spark {
+    float: right;
+    border: 1px solid orangered;
+}

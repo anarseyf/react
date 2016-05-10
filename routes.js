@@ -13,7 +13,6 @@ var SVGOverlay = require('./node_modules/react-map-gl/src/overlays/svg.react');
 var CanvasOverlay = require('./node_modules/react-map-gl/src/overlays/canvas.react');
 
 var ROUTES = require('./data/routes-example.json');
-var RUNS = [];
 var SPARKS = [];
 
 var color = d3.scale.category10();
@@ -28,8 +27,6 @@ var RouteOverlayExample = React.createClass({
 
     getInitialState: function getInitialState() {
 
-        ["./data/run1.gpx", "./data/run2.gpx"].forEach(this._getRun);
-
         return {
             viewport: {
                 latitude: 37.78,
@@ -37,7 +34,8 @@ var RouteOverlayExample = React.createClass({
                 zoom: 12,
                 startDragLngLat: null,
                 isDragging: false
-            }
+            },
+            runs: this.props.runs
         };
     },
 
@@ -69,10 +67,12 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
-        if (!RUNS) {
+        var runs = this.state.runs;
+        if (!runs) {
+            console.warn("this.state.runs is empty");
             return;
         }
-        var routes = RUNS.map(function _map(route, index) {
+        var routes = runs.map(function _map(route, index) {
             var points = route.coordinates.map(opt.project).map(function __map(p) {
                 return [d3.round(p[0], 1), d3.round(p[1], 1)];
             });
@@ -82,14 +82,16 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawCanvasOverlay: function _redrawCanvasOverlay(opt) {
-        if (!RUNS) {
+        var runs = this.state.runs;
+        if (!runs) {
+            console.warn("this.state.runs is empty");
             return;
         }
         var ctx = opt.ctx;
         var width = opt.width;
         var height = opt.height;
         ctx.clearRect(0, 0, width, height);
-        RUNS.map(function _map(route, index) {
+        runs.map(function _map(route, index) {
             route.coordinates.map(opt.project).forEach(function _forEach(p, i) {
                 var point = [d3.round(p[0], 1), d3.round(p[1], 1)];
                 ctx.fillStyle = d3.rgb(color(index)).brighter(1).toString();
@@ -98,33 +100,6 @@ var RouteOverlayExample = React.createClass({
                 ctx.fill();
             });
         });
-    },
-
-    _getRun: function (fileName) {
-        d3.xml(fileName, function (error, data) {
-
-            var nodes = data.querySelectorAll("trkpt");
-            var filteredNodes = [].filter.call(nodes,
-                function (point, i) { return i % 500 === 0; }); // TODO - remove
-
-            var points = [].map.call(filteredNodes, function(node) {
-                var point = {
-                    coordinates: [ +node.getAttribute("lon"), +node.getAttribute("lat") ]
-                };
-                [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
-                    console.debug("prefix = " + n.prefix + ", name = " + n.nodeName + ", value = " + n.textContent);
-                });
-                return point;
-            });
-
-            var coordinates = points.map(function (point) {
-                return point.coordinates;
-            });
-            var run = { coordinates: coordinates };
-            RUNS.push(run);
-
-            this.forceUpdate();
-        }.bind(this));
     },
 
     render: function render() {
