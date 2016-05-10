@@ -11,10 +11,17 @@ import {XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries} from 'react-vis';
 var React = require("./node_modules/react/");
 var ReactDOM = require("./node_modules/react-dom/");
 
-var fileNames = ["./data/run1.gpx", "./data/run2.gpx"];
+var files = ["Move_2016_04_12_19_15_54_Running.gpx",
+            "Move_2016_04_17_18_53_00_Running.gpx",
+            "Move_2016_04_21_19_07_52_Running.gpx",
+            "Move_2016_04_16_18_58_28_Running.gpx",
+            "Move_2016_04_19_19_18_27_Running.gpx"];
+
+var fileNames = files.map(function (file) { return "./data/" + file; });
 var runs = [];
 var selectedRunIndex = 0;
 var appContainer;
+var graphInstance;
 
 var getRun = function (fileName) {
     d3.xml(fileName, function (error, data) {
@@ -50,7 +57,6 @@ var getRun = function (fileName) {
             route: route
         };
         runs.push(run);
-        console.debug("run: " + JSON.stringify(run, null, 4));
 
         renderIfReady();
 
@@ -58,9 +64,9 @@ var getRun = function (fileName) {
 };
 
 var appHandleSelectedRun = function (i) {
-    console.debug(`APP: i = ${ i }`);
     selectedRunIndex = i;
     ReactDOM.render(r(App), appContainer);
+    graphInstance.triggerUpdate();
 };
 
 var App = React.createClass({
@@ -72,7 +78,7 @@ var App = React.createClass({
     render: function render() {
         var params = {
             width: 600,
-            height: 300,
+            height: 400,
             style: { float: 'left' },
             mapboxApiAccessToken: MAPBOX_TOKEN,
             runs: runs,
@@ -84,9 +90,8 @@ var App = React.createClass({
 
 var MyGraph = React.createClass({
 
-    getInitialState: function () {
-
-        var route = runs[0].route;
+    _computeState: function () {
+        var route = runs[selectedRunIndex].route;
 
         var types = Object.keys(route[0].measurements);
         var dataByType = {};
@@ -96,7 +101,6 @@ var MyGraph = React.createClass({
             });
         });
         var selectedType = types[0];
-
         return {
             types: types,
             selectedType: selectedType,
@@ -105,9 +109,16 @@ var MyGraph = React.createClass({
         }
     },
 
+    getInitialState: function () {
+        return this._computeState();
+    },
+
     handleClick: function (type) {
-        console.debug("type = " + type);
         this.setState({ selectedType: type, data: this.state.dataByType[type] });
+    },
+
+    triggerUpdate: function () {
+        this.setState(this._computeState());
     },
 
     render: function() {
@@ -115,19 +126,20 @@ var MyGraph = React.createClass({
         var animation = { duration: 500 };
         var types = this.state.types;
         var data = this.state.data;
+        var margin = {left: 60, right: 0, top: 10, bottom: 10};
 
         var buttons = types.map(function (type, i) {
             var className = "c-type-button " + (type === this.state.selectedType ? " c-selected" : "");
             return (<div className={ className }
-                onClick={ this.handleClick.bind(this, type) } key={ i }>{ type }</div>);
+                         onClick={ this.handleClick.bind(this, type) } key={ i }>{ type }</div>);
         }, this);
-
+        
         // <HorizontalGridLines />
         // <XAxis />
         return (
             <div>
-                <XYPlot width={300} height={100} animation={animation}>
-                    <YAxis />
+                <XYPlot width={300} height={100} animation={animation} margin={margin}>
+                    <YAxis ticks={3} />
                     <LineSeries data={ data } />
                 </XYPlot>
                 <div>{ buttons }</div>
@@ -152,10 +164,10 @@ var MyList = React.createClass({
     render: function () {
         var divs = runs.map(function (run, i) {
             var date = run.date,
-                distance = run.route[run.route.length - 1].measurements.distance / 1600,
-                speed = run.route.map(function(d) { return d.measurements.speed; }),
-                avgSpeed = d3.mean(speed),
-                hr = run.route.map(function(d) { return d.measurements.hr; }),
+                distance = run.route[run.route.length - 1].measurements.distance / 1600, // meters -> miles
+                speed = run.route.map(function(d) { return d.measurements.speed; }), // meters/sec
+                avgSpeed = d3.mean(speed) * 3600 / 1600, // mph
+                hr = run.route.map(function(d) { return d.measurements.hr; }), // bpm
                 avgHR = d3.mean(hr),
                 formatter = d3.format(".2n"),
                 fDistance = formatter(distance),
@@ -180,10 +192,10 @@ var MyList = React.createClass({
 var renderIfReady = function () {
     if (runs.length === fileNames.length) {
         appContainer = document.createElement("div");
-        document.body.appendChild(appContainer);
+        document.getElementById("map").appendChild(appContainer);
         ReactDOM.render(r(App), appContainer);
 
-        ReactDOM.render(
+        graphInstance = ReactDOM.render(
             <MyGraph />,
             document.getElementById('graph')
         );

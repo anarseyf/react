@@ -49,7 +49,7 @@ var RouteOverlayExample = React.createClass({
             r.g({
                 style: {pointerEvents: 'visibleStroke'},
                 onClick: function onClick() {
-                    console.debug('route ' + index);
+                    // console.debug('route ' + index);
                 }
             }, [
                 r.path({
@@ -71,7 +71,7 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
-        var runs = this.state.runs;
+        var runs = [this.state.runs[this.props.selectedRunIndex]];
         var routes = runs.map(function _map(run, index) {
             var route = run.route;
             var coordinates = this._getRouteCoordinates(route);

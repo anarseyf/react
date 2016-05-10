@@ -14,10 +14,15 @@ var d3 = require('d3');
 var React = require("./node_modules/react/");
 var ReactDOM = require("./node_modules/react-dom/");
 
-var fileNames = ["./data/run1.gpx", "./data/run2.gpx"];
+var files = ["Move_2016_04_12_19_15_54_Running.gpx", "Move_2016_04_17_18_53_00_Running.gpx", "Move_2016_04_21_19_07_52_Running.gpx", "Move_2016_04_16_18_58_28_Running.gpx", "Move_2016_04_19_19_18_27_Running.gpx"];
+
+var fileNames = files.map(function (file) {
+    return "./data/" + file;
+});
 var runs = [];
 var selectedRunIndex = 0;
 var appContainer;
+var graphInstance;
 
 var getRun = function getRun(fileName) {
     d3.xml(fileName, function (error, data) {
@@ -53,16 +58,15 @@ var getRun = function getRun(fileName) {
             route: route
         };
         runs.push(run);
-        console.debug("run: " + JSON.stringify(run, null, 4));
 
         renderIfReady();
     }.bind(this));
 };
 
 var appHandleSelectedRun = function appHandleSelectedRun(i) {
-    console.debug('APP: i = ' + i);
     selectedRunIndex = i;
     ReactDOM.render(r(App), appContainer);
+    graphInstance.triggerUpdate();
 };
 
 var App = React.createClass({
@@ -74,7 +78,7 @@ var App = React.createClass({
     render: function render() {
         var params = {
             width: 600,
-            height: 300,
+            height: 400,
             style: { float: 'left' },
             mapboxApiAccessToken: MAPBOX_TOKEN,
             runs: runs,
@@ -88,9 +92,8 @@ var MyGraph = React.createClass({
     displayName: 'MyGraph',
 
 
-    getInitialState: function getInitialState() {
-
-        var route = runs[0].route;
+    _computeState: function _computeState() {
+        var route = runs[selectedRunIndex].route;
 
         var types = Object.keys(route[0].measurements);
         var dataByType = {};
@@ -100,7 +103,6 @@ var MyGraph = React.createClass({
             });
         });
         var selectedType = types[0];
-
         return {
             types: types,
             selectedType: selectedType,
@@ -109,9 +111,16 @@ var MyGraph = React.createClass({
         };
     },
 
+    getInitialState: function getInitialState() {
+        return this._computeState();
+    },
+
     handleClick: function handleClick(type) {
-        console.debug("type = " + type);
         this.setState({ selectedType: type, data: this.state.dataByType[type] });
+    },
+
+    triggerUpdate: function triggerUpdate() {
+        this.setState(this._computeState());
     },
 
     render: function render() {
@@ -119,6 +128,7 @@ var MyGraph = React.createClass({
         var animation = { duration: 500 };
         var types = this.state.types;
         var data = this.state.data;
+        var margin = { left: 60, right: 0, top: 10, bottom: 10 };
 
         var buttons = types.map(function (type, i) {
             var className = "c-type-button " + (type === this.state.selectedType ? " c-selected" : "");
@@ -130,6 +140,8 @@ var MyGraph = React.createClass({
             );
         }, this);
 
+        console.debug('selectedType = ' + this.state.selectedType + ', data = ' + JSON.stringify(this.state.data, null, 4));
+
         // <HorizontalGridLines />
         // <XAxis />
         return React.createElement(
@@ -137,8 +149,8 @@ var MyGraph = React.createClass({
             null,
             React.createElement(
                 _reactVis.XYPlot,
-                { width: 300, height: 100, animation: animation },
-                React.createElement(_reactVis.YAxis, null),
+                { width: 300, height: 100, animation: animation, margin: margin },
+                React.createElement(_reactVis.YAxis, { ticks: 3 }),
                 React.createElement(_reactVis.LineSeries, { data: data })
             ),
             React.createElement(
@@ -169,14 +181,18 @@ var MyList = React.createClass({
         var divs = runs.map(function (run, i) {
             var date = run.date,
                 distance = run.route[run.route.length - 1].measurements.distance / 1600,
-                speed = run.route.map(function (d) {
+                // meters -> miles
+            speed = run.route.map(function (d) {
                 return d.measurements.speed;
             }),
-                avgSpeed = d3.mean(speed),
-                hr = run.route.map(function (d) {
+                // meters/sec
+            avgSpeed = d3.mean(speed) * 3600 / 1600,
+                // mph
+            hr = run.route.map(function (d) {
                 return d.measurements.hr;
             }),
-                avgHR = d3.mean(hr),
+                // bpm
+            avgHR = d3.mean(hr),
                 formatter = d3.format(".2n"),
                 fDistance = formatter(distance),
                 fAvgSpeed = formatter(avgSpeed),
@@ -231,10 +247,10 @@ var MyList = React.createClass({
 var renderIfReady = function renderIfReady() {
     if (runs.length === fileNames.length) {
         appContainer = document.createElement("div");
-        document.body.appendChild(appContainer);
+        document.getElementById("map").appendChild(appContainer);
         ReactDOM.render(r(App), appContainer);
 
-        ReactDOM.render(React.createElement(MyGraph, null), document.getElementById('graph'));
+        graphInstance = ReactDOM.render(React.createElement(MyGraph, null), document.getElementById('graph'));
 
         ReactDOM.render(React.createElement(MyList, { handleSelectedRun: appHandleSelectedRun }), document.getElementById('list'));
     }
@@ -71099,7 +71115,7 @@ var RouteOverlayExample = React.createClass({
         return r.g({ style: { pointerEvents: 'click', cursor: 'pointer' } }, [r.g({
             style: { pointerEvents: 'visibleStroke' },
             onClick: function onClick() {
-                console.debug('route ' + index);
+                // console.debug('route ' + index);
             }
         }, [r.path({
             d: 'M' + points.join('L'),
@@ -71118,7 +71134,7 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
-        var runs = this.state.runs;
+        var runs = [this.state.runs[this.props.selectedRunIndex]];
         var routes = runs.map(function _map(run, index) {
             var route = run.route;
             var coordinates = this._getRouteCoordinates(route);
