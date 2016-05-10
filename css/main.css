@@ -12,10 +12,17 @@ body {
     margin-bottom: 50px;
 }
 
-.c-spark {
+.c-right-menu {
     float: right;
+}
+
+.c-spark {
     border: 1px solid lightslategray;
     max-width: 350px;
+}
+
+.c-list {
+    margin: 10px auto;
 }
 
 .c-type-button {
@@ -27,6 +34,19 @@ body {
 }
 
 .c-type-button.c-selected {
+    background: lightslategray;
+    color: white;
+    cursor: default;
+}
+
+.c-route {
+    margin: 5px auto;
+    padding: 5px;
+    border: 1px solid lightslategray;
+    cursor: pointer;
+}
+
+.c-route.c-selected {
     background: lightslategray;
     color: white;
     cursor: default;

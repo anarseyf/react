@@ -10,27 +10,24 @@ var MAPBOX_TOKEN = "pk.eyJ1IjoiYW5hcnNleWYiLCJhIjoiY2luejZlYTV5MThyb3VnbHlwNDJrZ
 var RouteOverlayExample = require('./routes.js');
 var r = require('r-dom');
 var d3 = require('d3');
-var runs = [];
-
-console.log("OK");
 
 var React = require("./node_modules/react/");
-console.log("react");
 var ReactDOM = require("./node_modules/react-dom/");
-console.log("ReactDOM");
 
-var MapGL = require('react-map-gl');
 var fileNames = ["./data/run1.gpx", "./data/run2.gpx"];
+var runs = [];
+var selectedRunIndex = 0;
+var appContainer;
 
 var getRun = function getRun(fileName) {
     d3.xml(fileName, function (error, data) {
 
         var nodes = data.querySelectorAll("trkpt");
         var filteredNodes = [].filter.call(nodes, function (point, i) {
-            return i % 100 === 0;
-        }); // TODO - remove
+            return i % 10 === 0;
+        }); // TODO
 
-        var run = [].map.call(filteredNodes, function (node) {
+        var route = [].map.call(filteredNodes, function (node) {
             var measurements = {};
             [].forEach.call(node.querySelector("extensions").getElementsByTagName("*"), function (n) {
                 var key;
@@ -48,24 +45,40 @@ var getRun = function getRun(fileName) {
             };
         });
 
-        console.debug("run: " + JSON.stringify(run, null, 4));
+        var date = new Date(data.querySelector("time").textContent);
+
+        var run = {
+            fileName: fileName,
+            date: date,
+            route: route
+        };
         runs.push(run);
+        console.debug("run: " + JSON.stringify(run, null, 4));
 
         renderIfReady();
     }.bind(this));
+};
+
+var appHandleSelectedRun = function appHandleSelectedRun(i) {
+    console.debug('APP: i = ' + i);
+    selectedRunIndex = i;
+    ReactDOM.render(r(App), appContainer);
 };
 
 var App = React.createClass({
 
     displayName: 'App',
 
+    handleSelectedRun: appHandleSelectedRun,
+
     render: function render() {
         var params = {
-            width: 800,
-            height: 400,
+            width: 600,
+            height: 300,
             style: { float: 'left' },
             mapboxApiAccessToken: MAPBOX_TOKEN,
-            runs: runs
+            runs: runs,
+            selectedRunIndex: selectedRunIndex
         };
         return r.div([r(RouteOverlayExample, params)]);
     }
@@ -77,12 +90,12 @@ var MyGraph = React.createClass({
 
     getInitialState: function getInitialState() {
 
-        var run = runs[0];
+        var route = runs[0].route;
 
-        var types = Object.keys(run[0].measurements);
+        var types = Object.keys(route[0].measurements);
         var dataByType = {};
         types.forEach(function (type) {
-            dataByType[type] = run.map(function (datum, i) {
+            dataByType[type] = route.map(function (datum, i) {
                 return { x: i, y: datum.measurements[type] };
             });
         });
@@ -117,14 +130,14 @@ var MyGraph = React.createClass({
             );
         }, this);
 
+        // <HorizontalGridLines />
+        // <XAxis />
         return React.createElement(
             'div',
             null,
             React.createElement(
                 _reactVis.XYPlot,
                 { width: 300, height: 100, animation: animation },
-                React.createElement(_reactVis.HorizontalGridLines, null),
-                React.createElement(_reactVis.XAxis, null),
                 React.createElement(_reactVis.YAxis, null),
                 React.createElement(_reactVis.LineSeries, { data: data })
             ),
@@ -137,19 +150,99 @@ var MyGraph = React.createClass({
     }
 });
 
+var MyList = React.createClass({
+    displayName: 'MyList',
+
+
+    getInitialState: function getInitialState() {
+        return {
+            selectedRunIndex: 0
+        };
+    },
+
+    handleClick: function handleClick(i) {
+        this.props.handleSelectedRun(i);
+        this.setState({ selectedRunIndex: i });
+    },
+
+    render: function render() {
+        var divs = runs.map(function (run, i) {
+            var date = run.date,
+                distance = run.route[run.route.length - 1].measurements.distance / 1600,
+                speed = run.route.map(function (d) {
+                return d.measurements.speed;
+            }),
+                avgSpeed = d3.mean(speed),
+                hr = run.route.map(function (d) {
+                return d.measurements.hr;
+            }),
+                avgHR = d3.mean(hr),
+                formatter = d3.format(".2n"),
+                fDistance = formatter(distance),
+                fAvgSpeed = formatter(avgSpeed),
+                fAvgHR = d3.round(avgHR);
+
+            var className = "c-route" + (i === this.state.selectedRunIndex ? " c-selected" : "");
+            return React.createElement(
+                'div',
+                { className: className,
+                    key: i,
+                    onClick: this.handleClick.bind(this, i) },
+                React.createElement(
+                    'div',
+                    null,
+                    date.toDateString()
+                ),
+                React.createElement(
+                    'div',
+                    null,
+                    React.createElement(
+                        'strong',
+                        null,
+                        ' ',
+                        fDistance
+                    ),
+                    ' miles,',
+                    React.createElement(
+                        'strong',
+                        null,
+                        ' ',
+                        fAvgSpeed
+                    ),
+                    ' mph,',
+                    React.createElement(
+                        'strong',
+                        null,
+                        ' ',
+                        fAvgHR
+                    ),
+                    ' bpm'
+                )
+            );
+        }, this);
+        return React.createElement(
+            'div',
+            null,
+            divs
+        );
+    }
+});
+
 var renderIfReady = function renderIfReady() {
     if (runs.length === fileNames.length) {
-        var container = document.createElement("div");
-        document.body.appendChild(container);
-        ReactDOM.render(r(App), container);
+        appContainer = document.createElement("div");
+        document.body.appendChild(appContainer);
+        ReactDOM.render(r(App), appContainer);
 
         ReactDOM.render(React.createElement(MyGraph, null), document.getElementById('graph'));
+
+        ReactDOM.render(React.createElement(MyList, { handleSelectedRun: appHandleSelectedRun }), document.getElementById('list'));
     }
 };
 
 fileNames.forEach(getRun);
 
-},{"./node_modules/react-dom/":10,"./node_modules/react/":399,"./routes.js":400,"d3":4,"r-dom":7,"react-map-gl":190,"react-vis":228}],2:[function(require,module,exports){
+},{"./node_modules/react-dom/":10,"./node_modules/react/":399,"./routes.js":400,"d3":4,"r-dom":7,"react-vis":228}],2:[function(require,module,exports){
 'use strict';
 
 var d3Color = require('d3-color');
@@ -70990,7 +71083,8 @@ var RouteOverlayExample = React.createClass({
                 startDragLngLat: null,
                 isDragging: false
             },
-            runs: this.props.runs
+            runs: this.props.runs,
+            selectedRunIndex: this.props.selectedRunIndex
         };
     },
 
@@ -71025,11 +71119,8 @@ var RouteOverlayExample = React.createClass({
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
         var runs = this.state.runs;
-        if (!runs) {
-            console.warn("this.state.runs is empty");
-            return;
-        }
-        var routes = runs.map(function _map(route, index) {
+        var routes = runs.map(function _map(run, index) {
+            var route = run.route;
             var coordinates = this._getRouteCoordinates(route);
             var points = coordinates.map(opt.project).map(function __map(p) {
                 return [d3.round(p[0], 1), d3.round(p[1], 1)];
@@ -71040,16 +71131,15 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawCanvasOverlay: function _redrawCanvasOverlay(opt) {
-        var runs = this.state.runs;
-        if (!runs) {
-            console.warn("this.state.runs is empty");
-            return;
-        }
+
+        var runs = [this.state.runs[this.props.selectedRunIndex]];
         var ctx = opt.ctx;
         var width = opt.width;
         var height = opt.height;
         ctx.clearRect(0, 0, width, height);
-        runs.map(function _map(route, index) {
+
+        runs.map(function _map(run, index) {
+            var route = run.route;
             var coordinates = this._getRouteCoordinates(route);
             coordinates.map(opt.project).forEach(function _forEach(p, i) {
                 var point = [d3.round(p[0], 1), d3.round(p[1], 1)];

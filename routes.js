@@ -32,8 +32,9 @@ var RouteOverlayExample = React.createClass({
                 startDragLngLat: null,
                 isDragging: false
             },
-            runs: this.props.runs
-        };
+            runs: this.props.runs,
+            selectedRunIndex: this.props.selectedRunIndex
+        }
     },
 
     _onChangeViewport: function _onChangeViewport(viewport) {
@@ -71,11 +72,8 @@ var RouteOverlayExample = React.createClass({
 
     _redrawSVGOverlay: function _redrawSVGOverlay(opt) {
         var runs = this.state.runs;
-        if (!runs) {
-            console.warn("this.state.runs is empty");
-            return;
-        }
-        var routes = runs.map(function _map(route, index) {
+        var routes = runs.map(function _map(run, index) {
+            var route = run.route;
             var coordinates = this._getRouteCoordinates(route);
             var points = coordinates.map(opt.project).map(function __map(p) {
                 return [d3.round(p[0], 1), d3.round(p[1], 1)];
@@ -86,16 +84,15 @@ var RouteOverlayExample = React.createClass({
     },
 
     _redrawCanvasOverlay: function _redrawCanvasOverlay(opt) {
-        var runs = this.state.runs;
-        if (!runs) {
-            console.warn("this.state.runs is empty");
-            return;
-        }
+
+        var runs = [this.state.runs[this.props.selectedRunIndex]];
         var ctx = opt.ctx;
         var width = opt.width;
         var height = opt.height;
         ctx.clearRect(0, 0, width, height);
-        runs.map(function _map(route, index) {
+
+        runs.map(function _map(run, index) {
+            var route = run.route;
             var coordinates = this._getRouteCoordinates(route);
             coordinates.map(opt.project).forEach(function _forEach(p, i) {
                 var point = [d3.round(p[0], 1), d3.round(p[1], 1)];
