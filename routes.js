@@ -28,7 +28,7 @@ var RouteOverlayExample = React.createClass({
             viewport: {
                 latitude: 37.79,
                 longitude: -122.45,
-                zoom: 11.6,
+                zoom: 11.0,
                 startDragLngLat: null,
                 isDragging: false
             },

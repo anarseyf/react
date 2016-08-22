@@ -11,11 +11,12 @@ import {XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries} from 'react-vis';
 var React = require("./node_modules/react/");
 var ReactDOM = require("./node_modules/react-dom/");
 
-var files = ["Move_2016_04_12_19_15_54_Running.gpx",
-            "Move_2016_04_17_18_53_00_Running.gpx",
+var files =["Move_2016_07_31_06_23_53_Running.gpx",
             "Move_2016_04_21_19_07_52_Running.gpx",
+            "Move_2016_04_19_19_18_27_Running.gpx",
+            "Move_2016_04_17_18_53_00_Running.gpx",
             "Move_2016_04_16_18_58_28_Running.gpx",
-            "Move_2016_04_19_19_18_27_Running.gpx"];
+            "Move_2016_04_12_19_15_54_Running.gpx"];
 
 var fileNames = files.map(function (file) { return "./data/" + file; });
 var runs = [];
